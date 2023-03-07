@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Position Sizing</title>
+    </head>
+    <style>
+        body {
+            font-family: 'Arial';
+        }
+        .chart-container {
+            width: 850px;
+            margin: 40px auto 0 auto;
+        }
+        .results {
+            width: 400px;
+            margin: 40px auto;
+            font-size: 1.0em;
+            padding: 20px;
+            background: #282c34;
+            color: #f8c555;
+            border-radius: 6px;
+        }
+        .result {
+            color: #f08d49;
+        }
+    </style>
+    <body>
+        <div class="chart-container">
+            <canvas id="myChart"></canvas>
+        </div>
+        <div class="results">
+            Bet the Farm Strategy:
+            <div id="btf_result" class="result"></div><br/>
+            Smaller Bets Strategy:
+            <div id="sb_result" class="result"></div><br/>
+            Kelly Optimized Strategy:
+            <div id="ko_result" class="result"></div>
+        </div>
+    </body>
+</html>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    class Proposition {
+
+        constructor() {
+            this.chance = {
+                toWin: 0.51,
+                toLose: 0.49
+            }
+
+            this.reward = {
+                ifWon: 0.75,
+                ifLost: -0.50
+            }
+
+            if (this.chance.toWin + this.chance.toLose != 1) {
+                throw Error("Error: chance.toWin + chance.toLose must equal 1");
+            }
+        }
+
+        bet(bet_size=undefined) {
+            if (Math.random() < this.chance.toWin) {
+                return bet_size * (1 + this.reward.ifWon);
+            } else {
+                return bet_size * (1 + this.reward.ifLost);
+            }
+        }
+    }
+
+    function kelly_criterion(chance_to_win, avg_win, avg_loss) {
+        return (chance_to_win/Math.abs(avg_loss)) - ((1-chance_to_win)/avg_win);
+    }
+
+    function simulate_bets(position_size=1.0) {
+        const initial_account_value = 10000;
+        const num_rounds_betting = 500;
+
+        if (position_size == "kelly") {
+            let propInst = new Proposition();
+            position_size = kelly_criterion(
+                propInst.chance.toWin,
+                propInst.reward.ifWon,
+                propInst.reward.ifLost
+            );
+            console.log("Kelly Optimized Poistion Size: ", 
+                position_size, "\n");
+        }
+
+        let x_vals = [0]; // Rounds
+        let y_vals = [initial_account_value];
+
+        let current_account_value = initial_account_value;
+
+        for (let i = 0; i < num_rounds_betting; i++) {
+            let prop = new Proposition();
+            let bet_size = position_size * current_account_value;
+
+            current_account_value -= bet_size;
+            let result = prop.bet(bet_size);
+            current_account_value += result;
+
+            x_vals.push(i+1);
+            y_vals.push(current_account_value);
+        }
+
+        return {
+            x: x_vals,
+            y: y_vals
+        }
+    }
+
+    function getWinsAndLosses(account_vals) {
+        let wins = 0;
+        let losses = 0;
+
+        account_vals.forEach((account_val, i) => {
+            if (i > 0) {
+                if (account_vals[i] > account_vals[i-1]) {
+                    wins++;
+                } else {
+                    losses++;
+                }
+            }
+        })
+
+        return {
+            wins: wins,
+            losses: losses
+        }
+    }
+    
+    document.addEventListener("DOMContentLoaded", (event) => {
+        const ctx = document.getElementById("myChart");
+
+        let bet_the_farm = simulate_bets(1.0);
+        let smaller_bets = simulate_bets(0.15);
+        let kelly_optimized = simulate_bets("kelly");
+
+        console.log("Bet the Farm: ", getWinsAndLosses(bet_the_farm.y));
+        console.log("Smaller Bets: ", getWinsAndLosses(smaller_bets.y));
+        console.log("Kelly Optimized: ", getWinsAndLosses(kelly_optimized.y));
+
+        document.getElementById("btf_result").innerHTML = `$${Math.round(
+            bet_the_farm.y[bet_the_farm.y.length-1]).toLocaleString()}`;
+
+        document.getElementById("sb_result").innerHTML = `$${Math.round(
+            smaller_bets.y[smaller_bets.y.length-1]).toLocaleString()}`;
+
+        document.getElementById("ko_result").innerHTML = `$${Math.round(
+            kelly_optimized.y[kelly_optimized.y.length-1]).toLocaleString()}`;
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: smaller_bets.x,
+                datasets: [
+                    {
+                        label: 'Bet the Farm (All In)',
+                        data: bet_the_farm.y,
+                        fill: false,
+                        pointRadius: 0,
+                        borderColor: '#c66',
+                    },
+                    {
+                        label: 'Smaller Bets',
+                        data: smaller_bets.y,
+                        fill: false,
+                        pointRadius: 0,
+                        borderColor: '#cc65fe',
+                    },
+                    {
+                        label: 'Kelly Optimized',
+                        data: kelly_optimized.y,
+                        fill: false,
+                        pointRadius: 0,
+                        borderColor: 'orange',
+                    }
+                ]
+            },
+            options: {
+                scales: {
+                    x: {
+                        display: true,
+                    },
+                    y: {
+                        display: true,
+                        type: 'logarithmic',
+                        ticks: {
+                            callback: (val) => {
+                                if (val < 0.0001) {
+                                    return '$' + val.toExponential(1)
+                                } else {
+                                    return '$' + val;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        })
+    })
+</script>
