@@ -6,9 +6,7 @@ A javascript simulation demonstrating the effect of position sizing on the outco
 * The reward for winning is +75%, and you risk losing 50%.    
 * The optimal position size given by the Kelly Criterion is f* = (0.51/0.50) - (0.49/0.75) = 0.3666667. 
 
-Watch the <a href="https://youtu.be/4XPpC8KcttE">YouTube video covering this topic here!</a>
-
-DISCLAIMER: Nothing in this repository, code or accompanying video is financial advice. If you place bets, trades or investments in real life, you do so at your own risk. This demonstration is NOT a solicitation to buy, trade, or bet anything, and is for educational purposes ONLY.
+DISCLAIMER: Nothing in this repository, code or description is financial advice. If you place bets, trades or investments in real life, you do so at your own risk. This demonstration is NOT a solicitation to buy, trade, or bet anything, and is for educational purposes ONLY.
 
 ## Why Position Sizing is Important
 
